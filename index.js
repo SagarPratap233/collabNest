@@ -1,15 +1,25 @@
-const express = require('express');
-const dotenv = require('dotenv');
-const session = require('express-session');
-const OAuth2Server = require('oauth2-server');
-const passport = require('passport');
+const http = require('http')
+const express = require('express')
+const { Server } = require('socket.io')
+const dotenv = require('dotenv')
+const session = require('express-session')
+const cors = require('cors')
+const passport = require('passport')
 const mongoose = require('mongoose')
-require('./config/passport-setup.js');
-//load enviornment variables from .env file     
-dotenv.config();
+require('./config/passport-setup.js')
+
+// Load environment variables
+dotenv.config()
 
 const app = express()
+const server = http.createServer(app) // Create HTTP server
+const io = new Server(server) // Create Socket.io server
+
 const PORT = process.env.PORT || 3000
+
+// Middleware
+app.use(cors())
+app.use(express.static('public')) // Serve static files
 
 mongoose
   .connect(process.env.MONGO_URI, {
@@ -19,49 +29,45 @@ mongoose
   .then(() => console.log('MongoDB Connected'))
   .catch((err) => console.log(err))
 
-
 app.use(
   session({
     secret: process.env.clientSecret || 'your-session-secret',
     resave: false,
-    saveUninitialized: true
+    saveUninitialized: true,
   })
 )
 
-// Initialize Passport
 app.use(passport.initialize())
 app.use(passport.session())
 
-//creating an oAuth server Instance
-const oauth = new OAuth2Server({
-    model: require('./models/User.js'),
-    allowBearerTokensInQueryString: true,
-    accessTokenLifetime: 60*60*24
-});
+// Socket.io connection handling
+io.on('connection', (socket) => {
+  console.log('A user connected')
+  socket.on('disconnect', () => {
+    console.log('User disconnected')
+  })
+})
 
-
-
-app.get("/", (req, res)=> {
-    res.send("You have done the first step")
+// Routes
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/public/index.html')
 })
 
 app.get(
   '/auth/google',
   passport.authenticate('google', {
-    scope: ['profile', 'email']
+    scope: ['profile', 'email'],
   })
 )
 
-// Google will redirect to this route after authentication
 app.get(
   '/auth/google/callback',
   passport.authenticate('google'),
   (req, res) => {
-    res.redirect('/profile') // Redirect to a protected route
+    res.redirect('/profile')
   }
 )
 
-// Protected route
 app.get('/profile', (req, res) => {
   if (!req.user) {
     return res.redirect('/auth/google')
@@ -69,6 +75,7 @@ app.get('/profile', (req, res) => {
   res.send(`Welcome ${req.user.googleId}`)
 })
 
-app.listen(PORT, ()=> {
-    console.log(`Server is listening at ${PORT}`)
+// Start server
+server.listen(PORT, () => {
+  console.log(`Server is listening on http://localhost:${PORT}`)
 })
