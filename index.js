@@ -7,13 +7,20 @@ const cors = require('cors')
 const passport = require('passport')
 const mongoose = require('mongoose')
 require('./config/passport-setup.js')
-
+const  {OpenAI} = require('openai');
+const { error } = require('console')
+const exp = require('constants')
 // Load environment variables
 dotenv.config()
 
-const app = express()
-const server = http.createServer(app) // Create HTTP server
-const io = new Server(server) // Create Socket.io server
+const app = express();
+const server = http.createServer(app);// Create HTTP server
+const io = new Server(server);// Create Socket.io server
+
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+})
 
 const PORT = process.env.PORT || 3000
 
@@ -39,6 +46,7 @@ app.use(
 
 app.use(passport.initialize())
 app.use(passport.session())
+app.use(express.json());
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
@@ -73,6 +81,31 @@ app.get('/profile', (req, res) => {
     return res.redirect('/auth/google')
   }
   res.send(`Welcome ${req.user.googleId}`)
+})
+
+app.post('/chatbot', async (req, res) => {
+  const userMessage = req.body.message
+  if (!userMessage) {
+    return res.status(400).send({ error: 'Message is required' })
+  }
+
+  try {
+    const response = await openai.chat.completions.create({
+       model:"gpt-4o-mini",
+  messages:[
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "Who won the world series in 2020?"},
+    {"role": "assistant", "content": "The Los Angeles Dodgers won the World Series in 2020."},
+    {"role": "user", "content": "Where was it played?"}
+  ]
+    })
+
+    const chatbotMessage = response.choices[0].message.content
+    res.send({message: chatbotMessage});
+  } catch (error) {
+    console.log('Error fetching from OpenAI:', error)
+    res.status(500).send({ error: 'Error generating response' })
+  }
 })
 
 // Start server
