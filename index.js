@@ -53,6 +53,10 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('User disconnected')
   })
+
+  socket.on('document-update', (updatedContent) => {
+    socket.broadcast.emit('document-update', updatedContent)
+  })
 })
 
 // Routes

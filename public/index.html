@@ -9,12 +9,18 @@
     <h1>Welcome to CollabNest Real-Time Collaboration</h1>
     <p id="status">Connecting...</p>
 
+
+    <div> 
+      <h2>Collabarative Document</h2>
+      <textarea name="" id="sharedDoc" cols="100" rows="50"></textarea>
+    </div>
     <div>
       <h2>chatbot</h2>
       <div id = "chat"></div>
       <input type="text" id = 'userMessage' placeholder="Type your message..."/>
       <button id="send-btn">Send</button>
     </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
       const socket = io();
@@ -27,6 +33,17 @@
       socket.on('disconnect', () => {
         console.log('A user disconnected');
         document.getElementById('status').innerText = 'Disconnected';
+      });
+
+      const sharedDoc = document.getElementById('sharedDoc');
+
+      sharedDoc.addEventListener('input', ()=> {
+        const docContent = sharedDoc.value;
+        socket.emit('document-update', docContent);
+      })
+
+      socket.on('document-update', (updatedContent)=> {
+        sharedDoc.value = updatedContent;
       });
 
       const chatBox = document.getElementById('chat');
