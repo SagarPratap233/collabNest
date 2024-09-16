@@ -7,19 +7,18 @@ const cors = require('cors')
 const passport = require('passport')
 const mongoose = require('mongoose')
 require('./config/passport-setup.js')
-const  {OpenAI} = require('openai');
+const { CohereClient } = require('cohere-ai')
 const { error } = require('console')
 const exp = require('constants')
 // Load environment variables
 dotenv.config()
 
-const app = express();
-const server = http.createServer(app);// Create HTTP server
-const io = new Server(server);// Create Socket.io server
+const app = express()
+const server = http.createServer(app) // Create HTTP server
+const io = new Server(server) // Create Socket.io server
 
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const cohere = new CohereClient({
+  token: process.env.COHERE_APY_KEY,
 })
 
 const PORT = process.env.PORT || 3000
@@ -46,7 +45,7 @@ app.use(
 
 app.use(passport.initialize())
 app.use(passport.session())
-app.use(express.json());
+app.use(express.json())
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
@@ -90,20 +89,14 @@ app.post('/chatbot', async (req, res) => {
   }
 
   try {
-    const response = await openai.chat.completions.create({
-       model:"gpt-4o-mini",
-  messages:[
-    {"role": "system", "content": "You are a helpful assistant."},
-    {"role": "user", "content": "Who won the world series in 2020?"},
-    {"role": "assistant", "content": "The Los Angeles Dodgers won the World Series in 2020."},
-    {"role": "user", "content": "Where was it played?"}
-  ]
+    const response = await cohere.chat({
+      message: userMessage,
     })
 
-    const chatbotMessage = response.choices[0].message.content
-    res.send({message: chatbotMessage});
+    const chatbotMessage = response.text.trim()
+    res.send({ message: chatbotMessage })
   } catch (error) {
-    console.log('Error fetching from OpenAI:', error)
+    console.log('Error fetching from CohereAI:', error)
     res.status(500).send({ error: 'Error generating response' })
   }
 })

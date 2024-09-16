@@ -11,9 +11,9 @@
 
     <div>
       <h2>chatbot</h2>
+      <div id = "chat"></div>
       <input type="text" id = 'userMessage' placeholder="Type your message..."/>
-      <button onclick="sendMessage()">Send</button>
-      <div id = "chatbox"></div>
+      <button id="send-btn">Send</button>
     </div>
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -29,27 +29,25 @@
         document.getElementById('status').innerText = 'Disconnected';
       });
 
-      function sendMessage() {
-        const userMessage = document.getElementById("userMessage").value;
+      const chatBox = document.getElementById('chat');
+      const message = document.getElementById('userMessage');
+      const sendBtn = document.getElementById('send-btn')
+       
+      sendBtn.addEventListener('click', async ()=> {
+        const userMessage = message.value;
+        chatBox.innerHTML += `<p><strong> You:</strong>${userMessage}</p>`
 
-        fetch('/chatbot', {
+        const response = await fetch ('/chatbot', {
+          headers : {"Content-Type": "application/json"}, 
           method: 'POST', 
-          headers: {
-            'Content-Type': 'application/json'
-          }, 
           body: JSON.stringify({message:userMessage})
-        })
-        .then(response => {
-         response.json()
-        })
-        .then(data => {
-          const chatbox = document.getElementById("chatbox");
-          chatbox.innerHTML += `<p><strong>You:</strong> ${userMessage}</p>`;
-          chatbox.innerHTML += `<p><strong>AI:</strong> ${data.message}</p>`; 
-          document.getElementById("userMessage").value="";
-        })
-        .catch(error=> console.error('Error:', error));
-      }
+        } )
+
+        const data = await response.json();
+        chatBox.innerHTML += `<p><strong>Cohere:</strong>${data.message}</p>`
+
+        userMessage.value = '';
+      });
     </script>
   </body>
 </html>
