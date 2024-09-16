@@ -9,7 +9,7 @@ passport.use(
     {
       clientID: process.env.clientID,
       clientSecret: process.env.clientSecret,
-      callbackURL: 'http://localhost:5000/auth/google/callback',
+      callbackURL: 'http://localhost:3000/auth/google/callback',
     },
     async (accessToken, refreshToken, profile, done) => {
       console.log('Profile:', profile) // Log profile information
